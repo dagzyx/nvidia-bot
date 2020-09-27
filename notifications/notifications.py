@@ -1,5 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from notifications.providers.audio import AudioHandler
 from notifications.providers.discord import DiscordHandler
+from notifications.providers.join import JoinHandler
 from notifications.providers.pavlok import PavlokHandler
 from notifications.providers.slack import SlackHandler
 from notifications.providers.telegram import TelegramHandler
@@ -13,6 +16,7 @@ class NotificationHandler:
         self.audio_handler = AudioHandler()
         self.twilio_handler = TwilioHandler()
         self.discord_handler = DiscordHandler()
+        self.join_handler = JoinHandler()
         self.telegram_handler = TelegramHandler()
         self.slack_handler = SlackHandler()
         self.pavlok_handler = PavlokHandler()
@@ -26,6 +30,8 @@ class NotificationHandler:
             enabled_handlers.append("Twilio")
         if self.discord_handler.enabled:
             enabled_handlers.append("Discord")
+        if self.join_handler.enabled:
+            enabled_handlers.append("Join")
         if self.telegram_handler.enabled:
             enabled_handlers.append("Telegram")
         if self.slack_handler.enabled:
@@ -35,15 +41,20 @@ class NotificationHandler:
         return enabled_handlers
 
     def send_notification(self, message):
-        if self.audio_handler.enabled:
-            self.audio_handler.play()
-        if self.twilio_handler.enabled:
-            self.twilio_handler.send(message)
-        if self.discord_handler.enabled:
-            self.discord_handler.send(message)
-        if self.telegram_handler.enabled:
-            self.telegram_handler.send(message)
-        if self.slack_handler.enabled:
-            self.slack_handler.send(message)
-        if self.pavlok_handler.enabled:
-            self.pavlok_handler.zap()
+        with ThreadPoolExecutor(
+            max_workers=len(self.get_enabled_handlers())
+        ) as executor:
+            if self.audio_handler.enabled:
+                executor.submit(self.audio_handler.play)
+            if self.twilio_handler.enabled:
+                executor.submit(self.twilio_handler.send, message)
+            if self.discord_handler.enabled:
+                executor.submit(self.discord_handler.send, message)
+            if self.join_handler.enabled:
+                executor.submit(self.join_handler.send, message)
+            if self.telegram_handler.enabled:
+                executor.submit(self.telegram_handler.send, message)
+            if self.slack_handler.enabled:
+                executor.submit(self.slack_handler.send, message)
+            if self.pavlok_handler.enabled:
+                executor.submit(self.pavlok_handler.zap)
