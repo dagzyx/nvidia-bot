@@ -57,7 +57,7 @@ PRODUCT_IDS = json.load(open(PRODUCT_IDS_FILE))
 
 
 class NvidiaBuyer:
-    def __init__(self, gpu, locale="en_us", interval=5):
+    def __init__(self, gpu, locale="en_us", test=False, interval=5):
         self.product_ids = set([])
         self.cli_locale = locale.lower()
         self.locale = self.map_locales()
@@ -67,6 +67,7 @@ class NvidiaBuyer:
         self.auto_buy_enabled = False
         self.attempt = 0
         self.started_at = datetime.now()
+        self.test = test
         self.interval = interval
 
         self.gpu_long_name = GPU_DISPLAY_NAMES[gpu]
